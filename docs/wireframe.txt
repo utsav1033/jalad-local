@@ -1,0 +1,40 @@
+kaun banega tokenpati, screen wireframe. Build to this, then argue with it.
+Terminal width assumed 100. Everything must degrade to 80.
+
+ ██╗  ██╗ █████╗ ██╗   ██╗███╗   ██╗    ██████╗  █████╗ ███╗   ██╗███████╗ ██████╗  █████╗
+ (pyfiglet, gradient left to right, accent -> green)
+                         k a u n   b a n e g a   T O K E N P A T I
+                               "kitna deti hai?"  (dim, italic)
+
+┌─ HOT SEAT ──────────────────────────────────────────────────────────────────────────────┐
+│  chip       Apple M3 Max            backend     mlx  (llama.cpp-metal fallback)         │
+│  memory     36 GB unified           bandwidth   300 GB/s                                │
+│  gpu cores  30                      os reserve  4 GB                                    │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+ budgeting for 8,192 context  (--context to change)
+
+ #   contestant          quant    memory  [weights|kv|free]                    tok/s   ctx max   verdict
+ 1   Qwen2.5 7B          Q8_0     ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░    34      32k       daudega
+ 2   Llama 3.1 8B        Q8_0     ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░    31      64k       daudega
+ 3   Gemma 3 12B         Q6_K     ████████████████░░░░░░░░░░░░░░░░░░░░░░░░    22      32k       chalega
+ 4   Qwen3 32B           Q4_K_M   ████████████████████████████░░░░░░░░░░░░     9      16k       chalega
+ 5   Llama 3.3 70B       Q4_K_M   ██████████████████████████████████████████    -       -        ghare jake sutti babu
+
+ bar colours: weights green, kv amber, free dim. sutti rows: whole bar red.
+ verdict colours: daudega green bold, chalega amber, sutti red.
+
+┌─ FINAL ANSWER ──────────────────────────────────────────────────────────────────────────┐
+│                                                                                         │
+│   Qwen2.5 7B  ·  Q8_0  ·  mlx  ·  ~34 tok/s  ·  up to 32k context                       │
+│                                                                                         │
+│   pip install mlx-lm                                                                    │
+│   mlx_lm.generate --model mlx-community/Qwen2.5-7B-Instruct-8bit --prompt "hi"          │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+   (accent border, brightest thing on screen)
+
+Later, maybe:
+  - speedometer arc next to the final answer
+  - a "phone a friend" flag that explains why a model got its verdict
+  - --serve, phase 2

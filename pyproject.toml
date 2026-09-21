@@ -1,0 +1,24 @@
+[project]
+name = "tokenpati"
+version = "0.1.0"
+description = "kaun banega tokenpati: which local LLM will actually run on this machine"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "rich>=13.7",
+    "psutil>=5.9",
+    "pyfiglet>=1.0",
+]
+
+[project.scripts]
+tokenpati = "tokenpati.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tokenpati"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
