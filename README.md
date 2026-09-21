@@ -12,20 +12,38 @@ Run one command. It reads your hardware, works out which local LLMs will actuall
 | `chalega` | it'll do | fits in memory with headroom, usable speed |
 | `ghare jake sutti babu` | go home and sleep | doesn't fit, or fits but unusably slow |
 
-## Phase 1 (this repo, now): analyzer only
-
-Detect hardware, compute budgets, print the verdict table. No serving yet.
-
-## Phase 2 (later): serve
-
-`tokenpati serve <model>` picks the backend and runs it.
-
 ## Run
 
 ```sh
+git clone https://github.com/utsav1033/jalad-local && cd jalad-local
 uv sync
 uv run tokenpati
 ```
+
+Or install it as a command:
+
+```sh
+uv tool install .
+tokenpati
+```
+
+Flags: `--context 32768` budgets memory for a longer context, `--fast` skips the game-show pause, `--json` for scripts.
+
+## How it decides
+
+Every number is derived from four things about your machine: memory, memory bandwidth, backend, and how much of that memory the GPU may actually use (Apple caps it at about 75% of unified memory).
+
+- **Weights** = params × bytes per param at that quant × 1.1 overhead.
+- **KV cache** = 2 × layers × kv heads × head dim × context × 2 bytes. Budgeted at the context you ask for.
+- **tok/s** = bandwidth ÷ (active weights + KV at 2k) × 0.8. Decode is memory-bound, so this one line predicts speed for any model on any machine. MoE models use their active parameters, which is why a 30B-A3B can outrun an 8B.
+- **Quant** = the highest precision that still clears the fast bar, else the fastest one that clears the slow bar.
+- **Winner** = the biggest model that gets `daudega`.
+
+Every tok/s is a prediction. Run the model, measure, and adjust `EFFICIENCY` in `budget.py` if it's off.
+
+## Phase 1 (now): analyzer only
+
+Phase 2 adds `tokenpati serve`, which picks the backend and runs the winner.
 
 ## Layout
 
