@@ -327,7 +327,7 @@ fn verdict_style(v: Verdict) -> String {
 pub fn leaderboard(hw: &Hardware, ranked: &[Ranked]) {
     let tw = term_width();
     let compact = tw < 100;
-    let bar_w = if tw >= 110 { 24 } else if compact { 10 } else { 14 };
+    let bar_w = if tw >= 110 { 24 } else if compact { 9 } else { 14 };
     let gap = if compact { "  " } else { "   " };
     let target = ranked.first().map(|r| r.estimate.target_context).unwrap_or(0);
     out(&Styled::new()
