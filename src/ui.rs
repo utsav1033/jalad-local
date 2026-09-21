@@ -329,6 +329,7 @@ pub fn leaderboard(hw: &Hardware, ranked: &[Ranked]) {
     let compact = tw < 100;
     let bar_w = if tw >= 110 { 24 } else if compact { 9 } else { 14 };
     let gap = if compact { "  " } else { "   " };
+    let indent = if compact { " " } else { "  " };
     let target = ranked.first().map(|r| r.estimate.target_context).unwrap_or(0);
     out(&Styled::new()
         .push(format!("  budgeting for {} tokens of context   (--context to change)", with_commas(target)), DIM)
@@ -388,7 +389,7 @@ pub fn leaderboard(hw: &Hardware, ranked: &[Ranked]) {
         }
     }
     let render_row = |cells: &[Styled]| -> String {
-        let mut s = String::from("  ");
+        let mut s = String::from(indent);
         for (i, c) in cells.iter().enumerate() {
             let cell = if right_align[i] {
                 c.clone().pad_left(widths[i])
@@ -406,7 +407,7 @@ pub fn leaderboard(hw: &Hardware, ranked: &[Ranked]) {
     };
     out(&render_row(&header));
     let rule_w: usize = widths.iter().sum::<usize>() + gap.len() * (ncol - 1);
-    out(&format!("  {}", Styled::new().push("─".repeat(rule_w), DIM).render()));
+    out(&format!("{indent}{}", Styled::new().push("─".repeat(rule_w), DIM).render()));
     for row in &rows {
         out(&render_row(row));
     }
