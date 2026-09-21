@@ -66,18 +66,22 @@ def _fig(text: str, font: str) -> str:
     return "\n".join(l for l in lines if l.strip())
 
 
+def _fullwidth(s: str) -> str:
+    """ascii -> fullwidth unicode, so the line reads about twice as large."""
+    return "".join(chr(ord(c) + 0xFEE0) if 0x21 <= ord(c) <= 0x7E else "\u3000" if c == " " else c for c in s)
+
+
 def banner(console: Console) -> None:
     w = console.width
     if w >= 116:
-        top, big = _fig("Kaun Banega", "big"), _fig("TOKENPATI", "dos_rebel")
+        big = _fig("TOKENPATI", "dos_rebel")
     elif w >= 78:
-        top, big = _fig("Kaun Banega", "big"), _fig("TOKENPATI", "ansi_regular")
+        big = _fig("TOKENPATI", "ansi_regular")
     else:
-        top, big = _fig("Kaun Banega", "small"), _fig("TOKENPATI", "small")
-    console.print()
-    console.print(Align.center(Text(top, style=f"bold {ACCENT}")))
+        big = _fig("TOKENPATI", "small")
     console.print()
     console.print(Align.center(_gradient_text(big)))
+    console.print(Align.center(Text(_fullwidth("kaun banega tokenpati"), style=f"bold {ACCENT}")))
     console.print(Align.center(Text("which local model will actually run on this thing", style=f"italic {DIM}")))
     console.print()
 
