@@ -69,13 +69,14 @@ def _fig(text: str, font: str) -> str:
 def banner(console: Console) -> None:
     w = console.width
     if w >= 116:
-        top, big = _fig("KAUN BANEGA", "small"), _fig("TOKENPATI", "dos_rebel")
+        top, big = _fig("KAUN BANEGA", "ansi_regular"), _fig("TOKENPATI", "dos_rebel")
     elif w >= 78:
-        top, big = _fig("KAUN BANEGA", "small"), _fig("TOKENPATI", "ansi_regular")
+        top, big = _fig("KAUN BANEGA", "pagga"), _fig("TOKENPATI", "ansi_regular")
     else:
-        top, big = "K A U N   B A N E G A", _fig("TOKENPATI", "small")
+        top, big = _fig("KAUN BANEGA", "pagga"), _fig("TOKENPATI", "small")
     console.print()
     console.print(Align.center(Text(top, style=f"bold {ACCENT}")))
+    console.print()
     console.print(Align.center(_gradient_text(big)))
     console.print(Align.center(Text("which local model will actually run on this thing", style=f"italic {DIM}")))
     console.print()
