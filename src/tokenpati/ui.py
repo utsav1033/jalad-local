@@ -61,12 +61,22 @@ def _gradient_text(s: str) -> Text:
     return out
 
 
+def _fig(text: str, font: str) -> str:
+    lines = pyfiglet.Figlet(font=font, width=400).renderText(text).splitlines()
+    return "\n".join(l for l in lines if l.strip())
+
+
 def banner(console: Console) -> None:
-    font = "ansi_shadow" if console.width >= 100 else "small"
-    art = pyfiglet.Figlet(font=font).renderText("TOKENPATI").rstrip("\n")
+    w = console.width
+    if w >= 116:
+        top, big = _fig("KAUN BANEGA", "small"), _fig("TOKENPATI", "dos_rebel")
+    elif w >= 78:
+        top, big = _fig("KAUN BANEGA", "small"), _fig("TOKENPATI", "ansi_regular")
+    else:
+        top, big = "K A U N   B A N E G A", _fig("TOKENPATI", "small")
     console.print()
-    console.print(Align.center(_gradient_text(art)))
-    console.print(Align.center(Text("k a u n   b a n e g a   t o k e n p a t i", style=f"bold {ACCENT}")))
+    console.print(Align.center(Text(top, style=f"bold {ACCENT}")))
+    console.print(Align.center(_gradient_text(big)))
     console.print(Align.center(Text("which local model will actually run on this thing", style=f"italic {DIM}")))
     console.print()
 
