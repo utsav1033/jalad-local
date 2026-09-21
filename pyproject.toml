@@ -3,12 +3,24 @@ name = "tokenpati"
 version = "0.1.0"
 description = "kaun banega tokenpati: which local LLM will actually run on this machine"
 readme = "README.md"
+license = "MIT"
+authors = [{ name = "utsav1033" }]
 requires-python = ">=3.11"
+keywords = ["llm", "local", "inference", "quantization", "mlx", "ollama", "llama.cpp"]
+classifiers = [
+    "Environment :: Console",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "rich>=13.7",
     "psutil>=5.9",
     "pyfiglet>=1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/utsav1033/jalad-local"
+Repository = "https://github.com/utsav1033/jalad-local"
 
 [project.scripts]
 tokenpati = "tokenpati.cli:main"

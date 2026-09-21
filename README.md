@@ -12,19 +12,40 @@ Run one command. It reads your hardware, works out which local LLMs will actuall
 | `chalega` | it'll do | fits in memory with headroom, usable speed |
 | `ghare jake sutti babu` | go home and sleep | doesn't fit, or fits but unusably slow |
 
-## Run
+## Install
+
+```sh
+pip install tokenpati
+tokenpati
+```
+
+Or without installing anything permanently:
+
+```sh
+uvx tokenpati
+```
+
+Straight from the repo:
+
+```sh
+pip install git+https://github.com/utsav1033/jalad-local
+```
+
+## Develop
 
 ```sh
 git clone https://github.com/utsav1033/jalad-local && cd jalad-local
 uv sync
 uv run tokenpati
+uv run pytest
 ```
 
-Or install it as a command:
+## Release
+
+Bump `version` in `pyproject.toml`, then tag it. GitHub Actions builds and publishes to PyPI.
 
 ```sh
-uv tool install .
-tokenpati
+git tag v0.1.0 && git push --tags
 ```
 
 Flags: `--context 32768` budgets memory for a longer context, `--fast` skips the game-show pause, `--json` for scripts.
