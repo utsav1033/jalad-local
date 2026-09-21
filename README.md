@@ -14,15 +14,18 @@ Run one command. It reads your hardware, works out which local LLMs will actuall
 
 ## Install
 
+On a Mac the easy path is [uv](https://docs.astral.sh/uv/), since Apple's built-in Python is too old and has no `pip`:
+
+```sh
+brew install uv        # or: curl -LsSf https://astral.sh/uv/install.sh | sh
+uvx tokenpati
+```
+
+`uv tool install tokenpati` keeps it around as a `tokenpati` command. If you already have Python 3.11+ and pip:
+
 ```sh
 pip install tokenpati
 tokenpati
-```
-
-Or without installing anything permanently:
-
-```sh
-uvx tokenpati
 ```
 
 Straight from the repo:
