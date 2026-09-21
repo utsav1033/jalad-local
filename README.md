@@ -4,54 +4,26 @@
 
 Run one command. It reads your hardware, works out which local LLMs will actually run on it, at what quant, on which backend, and how many tokens per second you'll get. Then it hands you the exact command to run.
 
+Single static binary. No Python, no pip, no venv.
+
+## Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/utsav1033/jalad-local/main/install.sh | sh
+tokenpati
+```
+
+Or grab a binary from [Releases](https://github.com/utsav1033/jalad-local/releases), or build from source with `cargo install --git https://github.com/utsav1033/jalad-local`.
+
+Flags: `--context 32768` budgets memory for a longer context, `--fast` skips the game-show pause, `--json` for scripts.
+
 ## Verdicts
 
 | Verdict | Meaning | Rule |
 |---|---|---|
-| `daudega` | it'll sprint | top 3 by predicted tok/s, and only if above the fast threshold |
-| `chalega` | it'll do | fits in memory with headroom, usable speed |
+| `daudega` | it'll sprint | top 3 by size among models that clear the fast bar |
+| `chalega` | it'll do | fits in memory, usable speed |
 | `ghare jake sutti babu` | go home and sleep | doesn't fit, or fits but unusably slow |
-
-## Install
-
-On a Mac the easy path is [uv](https://docs.astral.sh/uv/), since Apple's built-in Python is too old and has no `pip`:
-
-```sh
-brew install uv        # or: curl -LsSf https://astral.sh/uv/install.sh | sh
-uvx tokenpati
-```
-
-`uv tool install tokenpati` keeps it around as a `tokenpati` command. If you already have Python 3.11+ and pip:
-
-```sh
-pip install tokenpati
-tokenpati
-```
-
-Straight from the repo:
-
-```sh
-pip install git+https://github.com/utsav1033/jalad-local
-```
-
-## Develop
-
-```sh
-git clone https://github.com/utsav1033/jalad-local && cd jalad-local
-uv sync
-uv run tokenpati
-uv run pytest
-```
-
-## Release
-
-Bump `version` in `pyproject.toml`, then tag it. GitHub Actions builds and publishes to PyPI.
-
-```sh
-git tag v0.1.0 && git push --tags
-```
-
-Flags: `--context 32768` budgets memory for a longer context, `--fast` skips the game-show pause, `--json` for scripts.
 
 ## How it decides
 
@@ -63,26 +35,26 @@ Every number is derived from four things about your machine: memory, memory band
 - **Quant** = the highest precision that still clears the fast bar, else the fastest one that clears the slow bar.
 - **Winner** = the biggest model that gets `daudega`.
 
-Every tok/s is a prediction. Run the model, measure, and adjust `EFFICIENCY` in `budget.py` if it's off.
+Every tok/s is a prediction. Run the model, measure, and adjust `EFFICIENCY` in `src/budget.rs` if it's off.
 
-## Phase 1 (now): analyzer only
+## Develop
 
-Phase 2 adds `tokenpati serve`, which picks the backend and runs the winner.
-
-## Layout
-
-```
-src/tokenpati/
-  hardware.py   what machine is this: chip, RAM, bandwidth, backend
-  catalog.py    the contestants: model families and their architecture numbers
-  budget.py     the maths: weight bytes, KV cache bytes, predicted tok/s
-  verdict.py    daudega / chalega / ghare jake sutti babu
-  ui.py         the game show: banner, gauges, table, final command
-  cli.py        entry point
-docs/wireframe.txt   the screen, sketched before any UI code
-tests/               predict, measure, correct
+```sh
+git clone https://github.com/utsav1033/jalad-local && cd jalad-local
+cargo run --release
+cargo test
 ```
 
-## The rule
+Layout: `hardware.rs` detects the machine, `catalog.rs` lists the contestants, `budget.rs` is the maths, `verdict.rs` hands out verdicts, `ui.rs` runs the show. Figlet fonts are embedded from `fonts/`.
 
-Predict, measure, correct. Every tok/s number this tool prints is a prediction. Run the model, measure the real number, fix the formula.
+## Release
+
+Bump `version` in `Cargo.toml`, then tag. GitHub Actions builds binaries for macOS (arm64, x86_64) and Linux (x86_64, arm64) and attaches them to the release.
+
+```sh
+git tag v0.2.0 && git push --tags
+```
+
+Phase 2 will add `tokenpati serve`, which picks the backend and runs the winner.
+
+The old Python version lives on PyPI as `tokenpati` 0.1.0 and is no longer maintained.
