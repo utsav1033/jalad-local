@@ -24,7 +24,7 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
           - target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-latest
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
           - target: aarch64-unknown-linux-gnu
@@ -40,3 +40,41 @@ jobs:
           bin: tokenpati
           target: ${{ matrix.target }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Updates github.com/utsav1033/homebrew-tap so `brew install utsav1033/tap/tokenpati` gets this release.
+  # Needs a repo secret HOMEBREW_TAP_TOKEN (a token with write access to that repo); skipped without it.
+  homebrew:
+    needs: binaries
+    runs-on: ubuntu-latest
+    env:
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render formula
+        if: env.TAP_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          gh release download "$GITHUB_REF_NAME" --pattern 'tokenpati-*.tar.gz' --dir dist
+          cp packaging/homebrew/tokenpati.rb.in tokenpati.rb
+          sed -i "s/@VERSION@/$version/g" tokenpati.rb
+          for f in dist/tokenpati-*.tar.gz; do
+            target=$(basename "$f" .tar.gz); target=${target#tokenpati-}
+            sed -i "s/@SHA_${target}@/$(sha256sum "$f" | cut -d' ' -f1)/" tokenpati.rb
+          done
+          if grep -q '@SHA_' tokenpati.rb; then echo "missing a binary:"; grep '@SHA_' tokenpati.rb; exit 1; fi
+          cat tokenpati.rb
+      - name: Push to tap
+        if: env.TAP_TOKEN != ''
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/utsav1033/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          cp tokenpati.rb tap/Formula/tokenpati.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/tokenpati.rb
+          git commit -m "tokenpati ${GITHUB_REF_NAME}" || exit 0
+          git push

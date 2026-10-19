@@ -1,0 +1,37 @@
+# Rendered by .github/workflows/release.yml and pushed to github.com/utsav1033/homebrew-tap.
+class Tokenpati < Formula
+  desc "Pick the right local LLM for your machine, then run it"
+  homepage "https://github.com/utsav1033/jalad-local"
+  version "@VERSION@"
+  license "MIT"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/utsav1033/jalad-local/releases/download/v@VERSION@/tokenpati-aarch64-apple-darwin.tar.gz"
+      sha256 "@SHA_aarch64-apple-darwin@"
+    end
+    on_intel do
+      url "https://github.com/utsav1033/jalad-local/releases/download/v@VERSION@/tokenpati-x86_64-apple-darwin.tar.gz"
+      sha256 "@SHA_x86_64-apple-darwin@"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/utsav1033/jalad-local/releases/download/v@VERSION@/tokenpati-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "@SHA_aarch64-unknown-linux-gnu@"
+    end
+    on_intel do
+      url "https://github.com/utsav1033/jalad-local/releases/download/v@VERSION@/tokenpati-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "@SHA_x86_64-unknown-linux-gnu@"
+    end
+  end
+
+  def install
+    bin.install "tokenpati"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/tokenpati --version")
+  end
+end

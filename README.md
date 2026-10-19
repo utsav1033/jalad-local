@@ -7,9 +7,11 @@ tokenpati reads your hardware, predicts how every model will fit and how fast it
 ![tokenpati models tab](docs/models.png)
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/utsav1033/jalad-local/main/install.sh | sh
+brew install utsav1033/tap/tokenpati
 tokenpati
 ```
+
+Or without Homebrew: `curl -fsSL https://raw.githubusercontent.com/utsav1033/jalad-local/main/install.sh | sh`
 
 Single binary for macOS and Linux. No Python. You don't need any engine installed first.
 
@@ -93,6 +95,6 @@ Or clone it and run `cargo run --release`, with `cargo test` for the tests.
 
 Code map: `hardware.rs` (detection, bandwidth benchmark) · `catalog.rs` (models) · `budget.rs` + `verdict.rs` (the maths) · `gguf.rs`, `hf.rs`, `net.rs` (Hugging Face and downloads) · `engine/` (ollama, llama.cpp, mlx) · `pipeline.rs` (the launch steps) · `tui/` (the app).
 
-To release: bump `version` in `Cargo.toml`, then `git tag vX.Y.Z && git push --tags`. CI builds the macOS and Linux binaries that `install.sh` downloads.
+To release: bump `version` in `Cargo.toml`, then `git tag vX.Y.Z && git push --tags`. CI builds the macOS and Linux binaries that `install.sh` downloads, and updates the Homebrew formula in `utsav1033/homebrew-tap` when the `HOMEBREW_TAP_TOKEN` secret is set.
 
 MIT licensed.
