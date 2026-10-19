@@ -2149,14 +2149,8 @@ fn draw_plan(f: &mut Frame, app: &App, p: &PlanModal, area: Rect) {
                     Some(e) if e.usable() => {
                         format!("ready  {}", e.version.clone().unwrap_or_default())
                     }
-                    Some(_) if engine == EngineKind::LlamaCpp => format!(
-                        "not installed yet: tokenpati fetches the {} build first",
-                        app.variant.name()
-                    ),
-                    Some(_) if engine == EngineKind::Ollama => {
-                        "not installed: install it from Setup (7) first".into()
-                    }
-                    Some(_) => "not installed: see Setup (7)".into(),
+                    Some(_) if engine == EngineKind::LlamaCpp => "installs itself on launch".into(),
+                    Some(_) => "not installed · Setup (7)".into(),
                     None => "checking…".into(),
                 };
                 ("engine", engine.name().to_string(), note)
