@@ -11,7 +11,7 @@ use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
-    Block, BorderType, Borders, Cell, Clear, Gauge, List, ListItem, ListState, Paragraph, Row,
+    Block, BorderType, Borders, Cell, Clear, List, ListItem, ListState, Paragraph, Row,
     Sparkline, Table, TableState, Wrap,
 };
 use ratatui::Frame;
@@ -36,6 +36,20 @@ fn kv_line(k: &str, v: impl Into<String>, vstyle: Style, kw: usize) -> Line<'sta
     Line::from(vec![
         Span::styled(format!(" {k:>kw$}  "), s(dim())),
         Span::styled(v.into(), vstyle),
+    ])
+}
+
+/// `label  ██████░░░░  value`: the numbers sit beside the bar, never on top of it, so they stay readable.
+fn meter(label: &str, ratio: f64, color: Color, value: String, width: u16) -> Line<'static> {
+    let head = format!(" {label:<5}");
+    let tail = format!("  {value}");
+    let bar_w = (width as usize).saturating_sub(head.chars().count() + tail.chars().count() + 1).max(4);
+    let filled = ((ratio.clamp(0.0, 1.0) * bar_w as f64).round() as usize).min(bar_w);
+    Line::from(vec![
+        Span::styled(head, s(dim())),
+        Span::styled("█".repeat(filled), s(color)),
+        Span::styled("░".repeat(bar_w - filled), s(faint())),
+        Span::styled(tail, bold(text())),
     ])
 }
 
@@ -490,20 +504,17 @@ fn draw_live(f: &mut Frame, app: &App, live: Rect) {
         0.0
     };
     f.render_widget(
-        Gauge::default()
-            .gauge_style(s(if ram_ratio > 0.9 { red() } else { green() }))
-            .ratio(ram_ratio)
-            .label(format!(
-                "ram {:.1} / {:.1} GiB",
-                l.ram_used_gib, l.ram_total_gib
-            )),
+        Paragraph::new(meter(
+            "ram",
+            ram_ratio,
+            if ram_ratio > 0.9 { red() } else { accent() },
+            format!("{:.1} / {:.1} GiB", l.ram_used_gib, l.ram_total_gib),
+            parts[0].width,
+        )),
         parts[0],
     );
     f.render_widget(
-        Gauge::default()
-            .gauge_style(s(accent()))
-            .ratio((l.cpu_pct as f64 / 100.0).clamp(0.0, 1.0))
-            .label(format!("cpu {:.0}%", l.cpu_pct)),
+        Paragraph::new(meter("cpu", l.cpu_pct as f64 / 100.0, accent(), format!("{:.0}%", l.cpu_pct), parts[1].width)),
         parts[1],
     );
     let model_line = match &app.session {
@@ -541,18 +552,12 @@ fn draw_live(f: &mut Frame, app: &App, live: Rect) {
             l.vram_total_gib.or(hw.vram_gib).unwrap_or(1.0),
         );
         f.render_widget(
-            Gauge::default()
-                .gauge_style(s(blue()))
-                .ratio((u / t).clamp(0.0, 1.0))
-                .label(format!("vram {u:.1} / {t:.0} GiB")),
+            Paragraph::new(meter("vram", u / t, blue(), format!("{u:.1} / {t:.0} GiB"), parts[4].width)),
             parts[4],
         );
         let g = l.gpu_util_pct.unwrap_or(0.0);
         f.render_widget(
-            Gauge::default()
-                .gauge_style(s(blue()))
-                .ratio((g as f64 / 100.0).clamp(0.0, 1.0))
-                .label(format!("gpu {g:.0}%")),
+            Paragraph::new(meter("gpu", g as f64 / 100.0, blue(), format!("{g:.0}%"), parts[5].width)),
             parts[5],
         );
     }
@@ -1586,24 +1591,17 @@ fn draw_step(f: &mut Frame, app: &App, i: usize, step: &StepState, area: Rect) {
             } else {
                 String::new()
             };
+            // bar on the left, numbers on the right; the file name already shows in the lines below
+            let _ = label;
             f.render_widget(
-                Gauge::default()
-                    .gauge_style(Style::default().fg(prussian()).bg(faint()))
-                    .ratio(ratio)
-                    .label(Span::styled(
-                        format!(
-                            "{} / {}  {:.0}%{rate}{eta}  {label}",
-                            human_bytes(p.done),
-                            human_bytes(p.total),
-                            ratio * 100.0
-                        ),
-                        bold(Color::White),
-                    )),
-                Rect {
-                    x: gauge.x + 1,
-                    width: gauge.width.saturating_sub(2),
-                    ..gauge
-                },
+                Paragraph::new(meter(
+                    "",
+                    ratio,
+                    accent(),
+                    format!("{:.0}%  {} / {}{rate}{eta}", ratio * 100.0, human_bytes(p.done), human_bytes(p.total)),
+                    gauge.width,
+                )),
+                gauge,
             );
         } else {
             f.render_widget(
