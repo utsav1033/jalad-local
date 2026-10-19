@@ -1,8 +1,8 @@
 [package]
 name = "tokenpati"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
-description = "kaun banega tokenpati: which local LLM will actually run on this machine"
+description = "kaun banega tokenpati: find the local LLM your machine can run, then download, load and chat with it from one terminal UI"
 license = "MIT"
 repository = "https://github.com/utsav1033/jalad-local"
 keywords = ["llm", "local", "inference", "quantization", "cli"]
@@ -17,6 +17,12 @@ figlet-rs = "0.1"
 indicatif = "0.17"
 unicode-width = "0.2"
 terminal_size = "0.4"
+ratatui = "0.29"
+crossterm = "0.28"
+ureq = { version = "2.12", default-features = false, features = ["tls", "native-certs", "json", "gzip"] }
+flate2 = "1"
+tar = "0.4"
+dirs = "6"
 
 [profile.release]
 lto = true

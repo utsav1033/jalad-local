@@ -123,6 +123,7 @@ mod tests {
             chip: "Apple M4".into(), os: "macos".into(), memory_gib: 16.0, usable_gib: 12.0,
             bandwidth_gbps: 120.0, bandwidth_estimated: false, backend: "mlx".into(),
             vram_gib: None, gpu_name: None, gpu_cores: Some(10),
+            offload_gib: 0.0, ram_bandwidth_gbps: 120.0, efficiency: crate::budget::EFFICIENCY, cpu_threads: 10,
         };
         let ranked = rank(best_quant_per_model(&estimate_all(&hw, CATALOG, 8192)));
         let win = winner(&ranked).expect("someone should win");

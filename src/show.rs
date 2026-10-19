@@ -21,13 +21,13 @@ pub const RED: &str = "\x1b[38;2;239;68;68m";
 /// Saffron.
 pub const ACCENT: &str = "\x1b[38;2;255;153;51m";
 
-const SAFFRON: (u8, u8, u8) = (255, 153, 51);
-const WHITE: (u8, u8, u8) = (255, 255, 255);
-const INDIA_GREEN: (u8, u8, u8) = (19, 136, 8);
+pub const SAFFRON: (u8, u8, u8) = (255, 153, 51);
+pub const WHITE: (u8, u8, u8) = (255, 255, 255);
+pub const INDIA_GREEN: (u8, u8, u8) = (19, 136, 8);
 
 const DOS_REBEL: &str = include_str!("../fonts/dos_rebel.flf");
-const ANSI_REGULAR: &str = include_str!("../fonts/ansi_regular.flf");
-const SMALL: &str = include_str!("../fonts/small.flf");
+pub const ANSI_REGULAR: &str = include_str!("../fonts/ansi_regular.flf");
+pub const SMALL: &str = include_str!("../fonts/small.flf");
 
 static COLOR: OnceLock<bool> = OnceLock::new();
 
@@ -121,7 +121,7 @@ fn centered(lines: &[Styled]) {
 
 // ---------------------------------------------------------------- banner
 
-fn lerp(a: (u8, u8, u8), b: (u8, u8, u8), t: f64) -> (u8, u8, u8) {
+pub fn lerp(a: (u8, u8, u8), b: (u8, u8, u8), t: f64) -> (u8, u8, u8) {
     let f = |x: u8, y: u8| (x as f64 + (y as f64 - x as f64) * t).round() as u8;
     (f(a.0, b.0), f(a.1, b.1), f(a.2, b.2))
 }
@@ -143,7 +143,7 @@ fn gradient_line(line: &str) -> Styled {
     s
 }
 
-fn fig(text: &str, font: &str) -> Vec<String> {
+pub fn fig(text: &str, font: &str) -> Vec<String> {
     let font = FIGfont::from_content(font).expect("embedded figlet font");
     let art = font.convert(text).map(|f| f.to_string()).unwrap_or_else(|| text.to_string());
     art.lines()
@@ -439,6 +439,7 @@ pub fn run_commands(hw: &Hardware, r: &Ranked) -> Vec<(&'static str, String)> {
         }
     }
     cmds.push(("easy mode", format!("ollama run {}-{}", e.model.ollama, e.quant.ollama_tag())));
+    cmds.push(("or let tokenpati download and serve it", format!("tokenpati serve \"{}\" --quant {}", e.model.name.to_lowercase(), e.quant.tag())));
     cmds
 }
 

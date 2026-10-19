@@ -44,11 +44,44 @@ pub struct Hardware {
     pub vram_gib: Option<f64>,
     pub gpu_name: Option<String>,
     pub gpu_cores: Option<u32>,
+    /// System RAM a GPU build may spill layers into (partial offload). 0 when there is no discrete GPU.
+    pub offload_gib: f64,
+    /// Bandwidth of that system RAM, GB/s.
+    pub ram_bandwidth_gbps: f64,
+    /// Fraction of peak bandwidth decode achieves. Starts at budget::EFFICIENCY, calibrated by measurements.
+    pub efficiency: f64,
+    pub cpu_threads: usize,
 }
 
 impl Hardware {
     pub fn is_apple(&self) -> bool {
         self.backend == "mlx"
+    }
+
+    /// Everything a model may occupy, counting RAM spill on discrete GPUs.
+    pub fn capacity_gib(&self) -> f64 {
+        self.usable_gib + self.offload_gib
+    }
+
+    pub fn has_discrete_gpu(&self) -> bool {
+        self.vram_gib.is_some()
+    }
+
+    /// Fold in what we measured on this machine before: real bandwidth and real tok/s.
+    pub fn apply_state(&mut self, state: &crate::state::State) {
+        if let Some(bw) = state.measured_bandwidth {
+            if self.has_discrete_gpu() {
+                self.ram_bandwidth_gbps = bw;
+            } else if self.bandwidth_estimated {
+                self.bandwidth_gbps = bw;
+                self.bandwidth_estimated = false;
+            }
+        }
+        if state.settings.use_calibration {
+            if let Some(c) = state.calibration() {
+                self.efficiency = (crate::budget::EFFICIENCY * c).clamp(0.1, 1.0);
+            }
+        }
     }
 
     pub fn memory_label(&self) -> String {
@@ -141,6 +174,10 @@ pub fn detect() -> Hardware {
                 vram_gib: None,
                 gpu_name: None,
                 gpu_cores: apple_gpu_cores(),
+                offload_gib: 0.0,
+                ram_bandwidth_gbps: bw.unwrap_or(UNKNOWN_BANDWIDTH),
+                efficiency: crate::budget::EFFICIENCY,
+                cpu_threads: threads(),
             };
         }
         return cpu_only(chip, os, memory_gib);
@@ -160,6 +197,10 @@ pub fn detect() -> Hardware {
             vram_gib: Some(vram),
             gpu_name: Some(name),
             gpu_cores: None,
+            offload_gib: (memory_gib - CPU_RESERVE_GIB).max(0.0),
+            ram_bandwidth_gbps: UNKNOWN_BANDWIDTH,
+            efficiency: crate::budget::EFFICIENCY,
+            cpu_threads: threads(),
         };
     }
     cpu_only(chip, os, memory_gib)
@@ -177,7 +218,120 @@ fn cpu_only(chip: String, os: String, memory_gib: f64) -> Hardware {
         vram_gib: None,
         gpu_name: None,
         gpu_cores: None,
+        offload_gib: 0.0,
+        ram_bandwidth_gbps: UNKNOWN_BANDWIDTH,
+        efficiency: crate::budget::EFFICIENCY,
+        cpu_threads: threads(),
     }
+}
+
+fn threads() -> usize {
+    std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4)
+}
+
+/// Read a buffer much larger than any cache from every core at once and time it.
+/// This is the number that decides tok/s on a CPU, so measuring beats guessing.
+pub fn bench_bandwidth() -> f64 {
+    const PER_THREAD: usize = 64 * 1024 * 1024; // 64 MiB of u64 per thread
+    let n = threads().clamp(1, 32);
+    let bufs: Vec<Vec<u64>> = (0..n).map(|i| vec![i as u64 + 1; PER_THREAD / 8]).collect();
+    let mut best = 0.0f64;
+    for _ in 0..3 {
+        let start = std::time::Instant::now();
+        let total: u64 = std::thread::scope(|sc| {
+            let hs: Vec<_> = bufs
+                .iter()
+                .map(|b| {
+                    sc.spawn(move || {
+                        // Four accumulators so the loop is limited by memory, not by the add chain.
+                        let (mut a, mut c, mut d, mut e) = (0u64, 0u64, 0u64, 0u64);
+                        for ch in b.chunks_exact(4) {
+                            a = a.wrapping_add(ch[0]);
+                            c = c.wrapping_add(ch[1]);
+                            d = d.wrapping_add(ch[2]);
+                            e = e.wrapping_add(ch[3]);
+                        }
+                        std::hint::black_box(a ^ c ^ d ^ e)
+                    })
+                })
+                .collect();
+            hs.into_iter().map(|h| h.join().unwrap_or(0)).fold(0, |x, y| x ^ y)
+        });
+        std::hint::black_box(total);
+        let secs = start.elapsed().as_secs_f64();
+        best = best.max((n * PER_THREAD) as f64 / secs / 1e9);
+    }
+    best
+}
+
+/// What the machine is doing right now.
+#[derive(Debug, Clone, Default)]
+pub struct Live {
+    pub ram_used_gib: f64,
+    pub ram_total_gib: f64,
+    pub cpu_pct: f32,
+    pub gpu_util_pct: Option<f32>,
+    pub vram_used_gib: Option<f64>,
+    pub vram_total_gib: Option<f64>,
+    /// Resident memory of the model server tokenpati started, if any.
+    pub model_rss_gib: Option<f64>,
+}
+
+pub struct Sampler {
+    sys: sysinfo::System,
+    nvidia: bool,
+}
+
+impl Sampler {
+    pub fn new(hw: &Hardware) -> Self {
+        let mut sys = sysinfo::System::new();
+        sys.refresh_cpu_usage();
+        sys.refresh_memory();
+        Sampler { sys, nvidia: hw.gpu_name.is_some() && hw.backend.contains("cuda") }
+    }
+
+    pub fn sample(&mut self) -> Live {
+        self.sys.refresh_cpu_usage();
+        self.sys.refresh_memory();
+        let mut live = Live {
+            ram_used_gib: self.sys.used_memory() as f64 / GIB,
+            ram_total_gib: self.sys.total_memory() as f64 / GIB,
+            cpu_pct: self.sys.global_cpu_usage(),
+            ..Default::default()
+        };
+        if self.nvidia {
+            let out = run("nvidia-smi", &["--query-gpu=utilization.gpu,memory.used,memory.total", "--format=csv,noheader,nounits"]);
+            let v: Vec<f64> = out
+                .as_deref()
+                .and_then(|o| o.lines().next())
+                .unwrap_or("")
+                .split(',')
+                .filter_map(|x| x.trim().parse().ok())
+                .collect();
+            if v.len() == 3 {
+                live.gpu_util_pct = Some(v[0] as f32);
+                live.vram_used_gib = Some(v[1] / 1024.0);
+                live.vram_total_gib = Some(v[2] / 1024.0);
+            }
+        }
+        live
+    }
+}
+
+/// Resident memory of a process and its children, GiB. Used to show what a loaded model really costs.
+pub fn process_rss_gib(pid: u32) -> Option<f64> {
+    let mut sys = sysinfo::System::new();
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+    let root = sysinfo::Pid::from_u32(pid);
+    let mut total = 0u64;
+    let mut found = false;
+    for (p, proc_) in sys.processes() {
+        if *p == root || proc_.parent() == Some(root) {
+            total += proc_.memory();
+            found = true;
+        }
+    }
+    found.then(|| total as f64 / GIB)
 }
 
 #[cfg(test)]
