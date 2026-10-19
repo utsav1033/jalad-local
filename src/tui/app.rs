@@ -75,11 +75,11 @@ impl Tab {
         match self {
             Tab::Machine => "Machine",
             Tab::Models => "Models",
-            Tab::Discover => "Discover",
+            Tab::Discover => "Search",
             Tab::Library => "Library",
-            Tab::Run => "Run",
+            Tab::Run => "Launch",
             Tab::Chat => "Chat",
-            Tab::Engines => "Engines",
+            Tab::Engines => "Setup",
         }
     }
     pub fn index(self) -> usize {
@@ -757,7 +757,7 @@ impl App {
     pub fn launch(&mut self, plan: LaunchPlan) {
         if let Some(j) = &self.job {
             if j.running() {
-                self.toast("a launch is already running. cancel it first (c on the Run tab)");
+                self.toast("a launch is already running. cancel it first (c on the Launch tab)");
                 return;
             }
         }
@@ -1029,7 +1029,7 @@ impl App {
                         self.discover.sel = 0;
                         self.discover.file_sel = 0;
                         if self.discover.results.is_empty() {
-                            self.discover.error = Some("no GGUF repos match. try a model family: qwen, llama, gemma, mistral, phi".into());
+                            self.discover.error = Some("nothing on Hugging Face matches. try a model family: qwen, llama, gemma, mistral, phi".into());
                         } else {
                             self.load_files();
                         }
@@ -2306,7 +2306,7 @@ impl App {
             self.session = None;
             self.chat.generating = None;
             self.toast(format!(
-                "{name} stopped unexpectedly ({status}). out of memory? check the Run tab log"
+                "{name} stopped unexpectedly ({status}). out of memory? check the Launch tab log"
             ));
         }
     }

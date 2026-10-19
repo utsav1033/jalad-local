@@ -15,15 +15,15 @@ pub const RESET: &str = "\x1b[0m";
 pub const BOLD: &str = "\x1b[1m";
 pub const DIM: &str = "\x1b[38;2;128;128;128m";
 pub const ITALIC: &str = "\x1b[3m";
-pub const GREEN: &str = "\x1b[38;2;34;197;94m";
-pub const AMBER: &str = "\x1b[38;2;245;158;11m";
-pub const RED: &str = "\x1b[38;2;239;68;68m";
-/// Saffron.
-pub const ACCENT: &str = "\x1b[38;2;255;153;51m";
+pub const GREEN: &str = "\x1b[38;2;110;201;170m";
+pub const AMBER: &str = "\x1b[38;2;226;192;128m";
+pub const RED: &str = "\x1b[38;2;229;128;128m";
+/// Light Prussian blue.
+pub const ACCENT: &str = "\x1b[38;2;125;179;221m";
 
-pub const SAFFRON: (u8, u8, u8) = (255, 153, 51);
-pub const WHITE: (u8, u8, u8) = (255, 255, 255);
-pub const INDIA_GREEN: (u8, u8, u8) = (19, 136, 8);
+const PRUSSIAN: (u8, u8, u8) = (62, 110, 150);
+const PRUSSIAN_LIGHT: (u8, u8, u8) = (125, 179, 221);
+const ICE: (u8, u8, u8) = (191, 221, 242);
 
 const DOS_REBEL: &str = include_str!("../fonts/dos_rebel.flf");
 pub const ANSI_REGULAR: &str = include_str!("../fonts/ansi_regular.flf");
@@ -126,7 +126,7 @@ pub fn lerp(a: (u8, u8, u8), b: (u8, u8, u8), t: f64) -> (u8, u8, u8) {
     (f(a.0, b.0), f(a.1, b.1), f(a.2, b.2))
 }
 
-/// Saffron -> white -> green across each line, tiranga style.
+/// Prussian -> light Prussian -> ice across each line.
 fn gradient_line(line: &str) -> Styled {
     let chars: Vec<char> = line.chars().collect();
     let n = chars.len().saturating_sub(1).max(1) as f64;
@@ -134,9 +134,9 @@ fn gradient_line(line: &str) -> Styled {
     for (i, ch) in chars.iter().enumerate() {
         let t = i as f64 / n;
         let (r, g, b) = if t < 0.5 {
-            lerp(SAFFRON, WHITE, t * 2.0)
+            lerp(PRUSSIAN, PRUSSIAN_LIGHT, t * 2.0)
         } else {
-            lerp(WHITE, INDIA_GREEN, (t - 0.5) * 2.0)
+            lerp(PRUSSIAN_LIGHT, ICE, (t - 0.5) * 2.0)
         };
         s = s.push(ch.to_string(), &format!("\x1b[1;38;2;{r};{g};{b}m"));
     }
@@ -198,7 +198,7 @@ pub fn wait_for_it(fast: bool) {
     }
     let pb = ProgressBar::new(STAGES.len() as u64);
     pb.set_style(
-        ProgressStyle::with_template("  {spinner:.214} {msg:<28.bold} {bar:30.214/238} {percent:>3}%")
+        ProgressStyle::with_template("  {spinner:.110} {msg:<28.bold} {bar:30.110/238} {percent:>3}%")
             .unwrap()
             .progress_chars("━━╌")
             .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
@@ -370,7 +370,7 @@ pub fn leaderboard(hw: &Hardware, ranked: &[Ranked]) {
                     Styled::new().push(format!("{:.0}", e.tok_s), &tok_style(e.tok_s))
                 },
                 Styled::new().push(if dead { "-".to_string() } else { ctx(e.max_context) }, DIM),
-                Styled::new().push(r.verdict.label(), &verdict_style(r.verdict)),
+                Styled::new().push(r.verdict.short(e.fits), &verdict_style(r.verdict)),
             ]
         })
         .collect();
@@ -477,7 +477,7 @@ pub fn final_answer(hw: &Hardware, r: &Ranked) {
 pub fn nobody_wins() {
     let body = vec![
         Styled::new(),
-        Styled::new().push("   ghare jake sutti babu. nothing fits. try --context 2048.", RED),
+        Styled::new().push("   nothing fits on this machine. try --context 2048.", RED),
         Styled::new(),
     ];
     panel("FINAL ANSWER", None, &body, RED, true);

@@ -1,7 +1,7 @@
 //! Colours and small drawing helpers. Truecolor when the terminal says so, 256-colour otherwise
 //! (macOS Terminal.app mangles RGB).
 
-use crate::show::{lerp, INDIA_GREEN, SAFFRON, WHITE};
+use crate::show::lerp;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use std::sync::OnceLock;
@@ -28,32 +28,47 @@ fn c(rgb: (u8, u8, u8), idx: u8) -> Color {
     }
 }
 
+// Light Prussian blue family. Status colours are muted so the blue stays the star.
+pub const PRUSSIAN_DEEP: (u8, u8, u8) = (31, 61, 92);
+pub const PRUSSIAN: (u8, u8, u8) = (62, 110, 150);
+pub const PRUSSIAN_LIGHT: (u8, u8, u8) = (125, 179, 221);
+pub const ICE: (u8, u8, u8) = (191, 221, 242);
+
+/// Titles, selection, keys: light Prussian blue.
 pub fn accent() -> Color {
-    c(SAFFRON, 215)
+    c(PRUSSIAN_LIGHT, 110)
+}
+/// Brightest blue, for the one thing on screen that matters most.
+pub fn ice() -> Color {
+    c(ICE, 153)
+}
+/// Mid Prussian, for borders of focused things.
+pub fn prussian() -> Color {
+    c(PRUSSIAN, 67)
 }
 pub fn green() -> Color {
-    c((34, 197, 94), 41)
+    c((110, 201, 170), 79)
 }
 pub fn amber() -> Color {
-    c((245, 158, 11), 214)
+    c((226, 192, 128), 180)
 }
 pub fn red() -> Color {
-    c((239, 68, 68), 203)
+    c((229, 128, 128), 174)
 }
 pub fn blue() -> Color {
-    c((96, 165, 250), 75)
+    c((150, 170, 230), 111)
 }
 pub fn dim() -> Color {
-    c((128, 128, 128), 244)
+    c((128, 140, 152), 245)
 }
 pub fn faint() -> Color {
-    c((70, 70, 70), 238)
+    c((58, 72, 88), 239)
 }
 pub fn text() -> Color {
-    c((229, 229, 229), 254)
+    c((226, 234, 242), 255)
 }
 pub fn sel_bg() -> Color {
-    c((48, 40, 30), 236)
+    c(PRUSSIAN_DEEP, 24)
 }
 
 pub fn s(fg: Color) -> Style {
@@ -66,8 +81,8 @@ pub fn italic(fg: Color) -> Style {
     Style::default().fg(fg).add_modifier(Modifier::ITALIC)
 }
 
-/// Saffron -> white -> green, one span per character.
-pub fn tiranga(text: &str) -> Vec<Span<'static>> {
+/// Deep Prussian -> light Prussian -> ice, one span per character.
+pub fn wordmark(text: &str) -> Vec<Span<'static>> {
     let chars: Vec<char> = text.chars().collect();
     let n = chars.len().saturating_sub(1).max(1) as f64;
     chars
@@ -76,23 +91,20 @@ pub fn tiranga(text: &str) -> Vec<Span<'static>> {
         .map(|(i, ch)| {
             let t = i as f64 / n;
             let rgb = if t < 0.5 {
-                lerp(SAFFRON, WHITE, t * 2.0)
+                lerp(PRUSSIAN, PRUSSIAN_LIGHT, t * 2.0)
             } else {
-                lerp(WHITE, INDIA_GREEN, (t - 0.5) * 2.0)
+                lerp(PRUSSIAN_LIGHT, ICE, (t - 0.5) * 2.0)
             };
             let col = if truecolor() {
                 Color::Rgb(rgb.0, rgb.1, rgb.2)
             } else if t < 0.34 {
-                Color::Indexed(215)
+                Color::Indexed(67)
             } else if t < 0.67 {
-                Color::Indexed(255)
+                Color::Indexed(110)
             } else {
-                Color::Indexed(34)
+                Color::Indexed(153)
             };
-            Span::styled(
-                ch.to_string(),
-                Style::default().fg(col).add_modifier(Modifier::BOLD),
-            )
+            Span::styled(ch.to_string(), Style::default().fg(col).add_modifier(Modifier::BOLD))
         })
         .collect()
 }

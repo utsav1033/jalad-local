@@ -1,4 +1,4 @@
-//! daudega / chalega / ghare jake sutti babu.
+//! runs fast / runs / won't run well. (Internally still daudega / chalega / sutti; --json keeps those codes.)
 
 use crate::budget::Estimate;
 use serde::Serialize;
@@ -19,6 +19,24 @@ pub enum Verdict {
 
 impl Verdict {
     pub fn label(self) -> &'static str {
+        match self {
+            Verdict::Daudega => "runs fast",
+            Verdict::Chalega => "runs",
+            Verdict::Sutti => "won't run well",
+        }
+    }
+
+    /// Like `label`, but says which way a dead model fails.
+    pub fn short(self, fits: bool) -> &'static str {
+        match (self, fits) {
+            (Verdict::Sutti, false) => "too big",
+            (Verdict::Sutti, true) => "too slow",
+            (v, _) => v.label(),
+        }
+    }
+
+    /// Stable code for --json, unchanged since 0.1 so scripts keep working.
+    pub fn code(self) -> &'static str {
         match self {
             Verdict::Daudega => "daudega",
             Verdict::Chalega => "chalega",

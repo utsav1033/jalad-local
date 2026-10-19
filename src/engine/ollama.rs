@@ -77,7 +77,7 @@ pub fn ensure_server(mut log: impl FnMut(String)) -> Result<String, String> {
         return Ok(v);
     }
     let bin = binary()
-        .ok_or("ollama is not installed. open the Engines tab (7) and press i, or use llama.cpp")?;
+        .ok_or("ollama is not installed. open the Setup tab (7) and press i, or use llama.cpp")?;
     log(format!("starting {} serve", bin.display()));
     let _ = std::fs::create_dir_all(crate::state::logs_dir());
     let logf = std::fs::File::create(crate::state::logs_dir().join("ollama.log"))

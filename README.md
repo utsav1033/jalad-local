@@ -1,6 +1,6 @@
 # jalad-local
 
-> **kaun banega tokenpati**: a game show where your machine sits in the hot seat and the models are the contestants. Then the winner actually plays.
+> **kaun banega tokenpati**: your machine sits in the hot seat, the models are the contestants, and the winner actually gets to play.
 
 `tokenpati` reads your hardware, works out which local LLMs will run on it (at what quant, on which engine, at how many tokens per second), and then **downloads, loads and chats with the one you pick**, all from one terminal app. Think LM Studio, in your terminal, open source, and honest about the maths.
 
@@ -20,18 +20,18 @@ You do not need any engine installed first. If nothing is there, tokenpati downl
 ## The app
 
 ```
- 1 Machine   2 Models   3 Discover   4 Library   5 Run   6 Chat   7 Engines
+ 1 Machine   2 Models   3 Search   4 Library   5 Launch   6 Chat   7 Setup
 ```
 
 | Tab | What you do there |
 |---|---|
 | **Machine** | See the hot seat: chip, GPU, memory, usable memory, bandwidth, live RAM/CPU/GPU. Press `b` to *measure* memory bandwidth instead of guessing it. Your best bets are listed; `enter` launches the winner. |
-| **Models** | The leaderboard. Every catalog model with a memory bar (weights, KV cache, free), predicted tok/s, your *measured* tok/s, max context, verdict. `←→` changes quant, `+/-` changes the context budget, and everything recomputes as you go. The detail pane shows the whole quant matrix and *why* it got its verdict. |
-| **Discover** | Search all of Hugging Face for GGUF models. Each file gets a fit badge and a speed estimate; tokenpati streams just the GGUF header (a few MB) to get the real layer count and KV size, so the numbers hold for models it has never heard of. |
+| **Models** | The leaderboard. 21 hand-picked models, each with a memory bar (weights, KV cache, free), predicted tok/s, your *measured* tok/s, max context, verdict. `←→` changes quant, `+/-` changes the context budget, and everything recomputes as you go. The detail pane shows the whole quant matrix and *why* it got its verdict. |
+| **Search** | Anything not in the Models list: search Hugging Face (where people publish open models), pick a size, and see if it fits before downloading. tokenpati reads just the first few MB of the file to get the model's real shape, so the numbers hold for models it has never heard of. |
 | **Library** | Everything on disk: ollama's models, GGUFs tokenpati downloaded, and LM Studio's model folder. Launch, unload or delete (it asks first). |
-| **Run** | Every launch is five visible steps, each a block that shows progress, logs and timing: **Engine → Weights → Load → Warm-up → Ready**. Downloads show speed and ETA and resume if cut off. Cancel any time, retry with `r`. |
+| **Launch** | Every launch is five visible steps, each a block that shows progress, logs and timing: **Engine → Weights → Load → Warm-up → Ready**. Downloads show speed and ETA and resume if cut off. Cancel any time, retry with `r`. |
 | **Chat** | Streaming chat with the loaded model. Thinking models show their reasoning in a dim block (`/think` toggles it). Every reply shows tok/s, tokens and time to first token. Context use is a live gauge. `/system`, `/temp`, `/copy`, `/save`, `/clear`. |
-| **Engines** | ollama, llama.cpp and mlx: installed? running? which version? `i` installs, `s` starts ollama, `←→` picks the llama.cpp build, `enter` marks your preferred engine. |
+| **Setup** | ollama, llama.cpp and mlx: installed? running? which version? `i` installs, `s` starts ollama, `←→` picks the llama.cpp build, `enter` marks your preferred engine. |
 
 Nothing downloads or starts until you have seen the **launch plan**: quant, engine, context and GPU layers are all adjustable there, with memory, speed, download size, free disk and the exact command recomputed live.
 
@@ -60,13 +60,13 @@ tokenpati serve "qwen3 8b" --engine llama.cpp --quant Q5_K_M --port 9000
 
 ## Verdicts
 
-| Verdict | Meaning | Rule |
-|---|---|---|
-| `daudega` | it'll sprint | top 3 by size among models that clear the fast bar |
-| `chalega` | it'll do | fits in memory, usable speed |
-| `ghare jake sutti babu` | go home and sleep | doesn't fit, or fits but unusably slow |
+| Verdict | Rule |
+|---|---|
+| **runs fast** | top 3 by size among models that clear the fast bar (18 tok/s, faster than you read) |
+| **runs** | fits in memory at a usable speed (10+ tok/s) |
+| **too big** / **too slow** | doesn't fit, or fits but slower than you read |
 
-You can still launch a `sutti` model. The plan tells you what will happen; it's your machine.
+You can still launch a "too slow" model. The plan tells you what will happen; it's your machine. `--json` keeps the original codes (`daudega`, `chalega`, `ghare jake sutti babu`) so existing scripts keep working.
 
 ## How it decides
 
@@ -77,7 +77,7 @@ Every number comes from four things about your machine: memory, memory bandwidth
 - **tok/s** = bandwidth ÷ (active weights + KV at 2k) × efficiency. Decode is memory-bound, so this one line predicts speed for any model on any machine. MoE models only read their active parameters, which is why a 30B-A3B can outrun an 8B.
 - **Partial offload** (discrete GPUs): layers that don't fit in VRAM sit in RAM, and time per token is the GPU read plus the RAM read.
 - **Quant** = the highest precision that still clears the fast bar, else the fastest one that clears the slow bar.
-- **Winner** = the biggest model that gets `daudega`.
+- **Winner** = the biggest model that **runs fast**.
 
 Every tok/s starts as a prediction. Each time a model runs, tokenpati measures the real speed and calibrates its efficiency factor for your machine, so predictions get better the more you use it. The Models tab shows predicted and measured side by side.
 

@@ -80,7 +80,10 @@ pub fn tree(repo: &str) -> Result<Vec<TreeEntry>, String> {
     let resp = net::hf_get(&agent, &format!("{}/api/models/{repo}/tree/main", base()))
         .query("recursive", "true")
         .call()
-        .map_err(net::err_text)?;
+        .map_err(|e| match e {
+            ureq::Error::Status(404, _) => format!("{repo} is not on Hugging Face (renamed or removed?). find it with Search (3), or pick another engine"),
+            e => net::err_text(e),
+        })?;
     resp.into_json().map_err(|e| format!("bad file list: {e}"))
 }
 

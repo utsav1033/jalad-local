@@ -95,7 +95,19 @@ pub fn err_text(e: ureq::Error) -> String {
                 _ => format!("HTTP {code}: {}", body.trim()),
             }
         }
-        ureq::Error::Transport(t) => format!("network: {t}"),
+        ureq::Error::Transport(t) => {
+            let host = t.url().map(|u| u.host_str().unwrap_or("").to_string()).unwrap_or_default();
+            let why = match t.kind() {
+                ureq::ErrorKind::Dns => "could not look up the address",
+                ureq::ErrorKind::ConnectionFailed => "connection refused",
+                ureq::ErrorKind::Io => "connection dropped",
+                ureq::ErrorKind::ProxyConnect | ureq::ErrorKind::ProxyUnauthorized => "the proxy refused it",
+                ureq::ErrorKind::InvalidUrl => "bad address",
+                _ => "network error",
+            };
+            let what = if host.is_empty() { "the server".to_string() } else { host };
+            format!("can't reach {what} ({why}). check your internet connection, then press r to retry")
+        }
     }
 }
 

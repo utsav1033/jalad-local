@@ -135,7 +135,7 @@ fn json_report(hw: &hardware::Hardware, context: u32) {
                 offload: r.estimate.offload,
                 tok_s: (r.estimate.tok_s * 10.0).round() / 10.0,
                 max_context: r.estimate.max_context,
-                verdict: r.verdict.label(),
+                verdict: r.verdict.code(),
             })
             .collect(),
     };

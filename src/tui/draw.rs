@@ -20,7 +20,7 @@ fn block(title: &str) -> Block<'static> {
     Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(s(faint()))
+        .border_style(s(prussian()))
         .title(Span::styled(format!(" {title} "), bold(text())))
 }
 
@@ -120,7 +120,7 @@ fn draw_header(f: &mut Frame, app: &mut App, area: Rect) {
     ])
     .areas(area);
     let mut l = vec![Span::raw(" ")];
-    l.extend(tiranga("TOKENPATI"));
+    l.extend(wordmark("TOKENPATI"));
     if top.width >= 120 {
         l.push(Span::styled("  kaun banega tokenpati", italic(dim())));
     }
@@ -192,7 +192,7 @@ fn draw_header(f: &mut Frame, app: &mut App, area: Rect) {
     }
     if let Some(sess) = &app.session {
         spans.push(Span::styled("   ● ", bold(green())));
-        spans.push(Span::styled(sess.name.clone(), bold(text())));
+        spans.push(Span::styled(sess.name.clone(), bold(ice())));
         spans.push(Span::styled(
             format!(" on {}", sess.engine.name()),
             s(dim()),
@@ -306,7 +306,7 @@ fn tip(app: &App) -> String {
         Tab::Machine if app.hw.bandwidth_estimated => "bandwidth is a guess for this chip. press b to measure it and every prediction gets sharper.".into(),
         Tab::Machine => format!("every model is budgeted against {:.1} GiB usable and {:.0} GB/s.", app.hw.usable_gib, app.hw.bandwidth_gbps),
         Tab::Models => format!("context budget {} tokens: more context = more KV cache memory. +/- to change.", app.state.settings.context),
-        Tab::Discover => "any GGUF on Hugging Face. fit and speed come from the file size and its header.".into(),
+        Tab::Discover => "every model on Hugging Face. tokenpati works out fit and speed before anything downloads.".into(),
         Tab::Library => format!("models live in {}", crate::state::models_dir().display()),
         Tab::Run => "every step is shown as it happens. downloads resume if interrupted.".into(),
         Tab::Chat => "the endpoint also works from any OpenAI client while you chat here.".into(),
@@ -340,7 +340,7 @@ fn draw_machine(f: &mut Frame, app: &App, area: Rect) {
     if banner_h > 0 {
         let art = crate::show::fig("TOKENPATI", crate::show::ANSI_REGULAR);
         let mut lines: Vec<Line> = vec![Line::raw("")];
-        lines.extend(art.iter().map(|l| Line::from(tiranga(l))));
+        lines.extend(art.iter().map(|l| Line::from(wordmark(l))));
         lines.push(Line::from(Span::styled(
             "which local model will actually run on this thing, and then run it",
             italic(dim()),
@@ -580,7 +580,7 @@ fn draw_bets(f: &mut Frame, app: &App, bets: Rect) {
             Span::styled(format!(" {crown}"), bold(accent())),
             Span::styled(
                 format!("{:<22}", e.model.name),
-                if i == 0 { bold(green()) } else { bold(text()) },
+                if i == 0 { bold(ice()) } else { bold(text()) },
             ),
             Span::styled(format!("{:<7}", q.label()), s(dim())),
             Span::styled(format!("~{:>3.0} tok/s ", e.tok_s), s(tok_color(e.tok_s))),
@@ -603,7 +603,7 @@ fn draw_bets(f: &mut Frame, app: &App, bets: Rect) {
         Span::styled(" to see every contestant", s(dim())),
     ]));
     f.render_widget(
-        Paragraph::new(lines).block(block_hot("YOUR BEST BETS", green())),
+        Paragraph::new(lines).block(block_hot("YOUR BEST BETS", ice())),
         bets,
     );
 }
@@ -680,11 +680,7 @@ fn draw_models(f: &mut Frame, app: &App, area: Rect) {
                     s(dim()),
                 )),
                 Cell::from(Span::styled(
-                    if r.verdict == Verdict::Sutti {
-                        "sutti babu"
-                    } else {
-                        r.verdict.label()
-                    },
+                    r.verdict.short(e.fits),
                     verdict_style(r.verdict),
                 )),
             ])
@@ -954,7 +950,7 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
     let focus_c = |x: DFocus| if d.focus == x { accent() } else { faint() };
     let q = if d.query.is_empty() && d.focus != DFocus::Search {
         Span::styled(
-            "search Hugging Face for GGUF models: qwen3 coder, gemma 3, llama 3.2, deepseek…",
+            "search Hugging Face: qwen3 coder, gemma 3, llama 3.2, deepseek…",
             italic(dim()),
         )
     } else {
@@ -1006,7 +1002,7 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
     let title = if d.query.is_empty() {
-        "MOST DOWNLOADED GGUF".to_string()
+        "POPULAR ON HUGGING FACE".to_string()
     } else {
         format!("RESULTS  {}", d.results.len())
     };
@@ -1049,7 +1045,7 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
         .border_type(BorderType::Rounded)
         .border_style(s(focus_c(DFocus::Files)))
         .title(Span::styled(
-            " FILES  (what fits, how fast) ",
+            " SIZES  (smaller = faster, bigger = smarter) ",
             bold(focus_c(DFocus::Files)),
         ));
     let Some(hit) = d.results.get(d.sel) else {
@@ -1076,7 +1072,7 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
             files,
         ),
         Some(Ok(choices)) if choices.is_empty() => f.render_widget(
-            Paragraph::new(Span::styled(" no .gguf model files in this repo", s(dim()))).block(fb),
+            Paragraph::new(Span::styled(" nothing tokenpati can run in this repo. try another result", s(dim()))).block(fb),
             files,
         ),
         Some(Ok(choices)) => {
@@ -1118,7 +1114,7 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
                     };
                     Row::new(vec![
                         Cell::from(Span::styled(
-                            c.quant.clone().unwrap_or_else(|| "?".into()),
+                            bits_label(c.quant.as_deref()),
                             bold(text()),
                         )),
                         Cell::from(Span::styled(human_bytes(c.size()), s(text()))),
@@ -1149,7 +1145,7 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
                     ],
                 )
                 .header(Row::new(
-                    ["quant", "size", "tok/s", "fit", "file"]
+                    ["quality", "size", "tok/s", "fit", "file"]
                         .map(|h| Cell::from(Span::styled(h, bold(accent())))),
                 ))
                 .row_highlight_style(Style::default().bg(sel_bg()))
@@ -1211,7 +1207,7 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
                     Some(Err(e)) if e.starts_with("reading") => {
                         lines.push(Line::from(Span::styled(
                             format!(
-                                " {} reading the GGUF header for exact numbers…",
+                                " {} reading the model's shape for exact numbers…",
                                 spinner(app)
                             ),
                             s(dim()),
@@ -1240,6 +1236,16 @@ fn draw_discover(f: &mut Frame, app: &App, area: Rect) {
     }
 }
 
+/// "Q4_K_M" -> "4-bit". People think in bits; the exact tag is in the file column.
+fn bits_label(q: Option<&str>) -> String {
+    let Some(q) = q else { return "?".into() };
+    let digits: String = q.trim_start_matches('I').trim_start_matches(['Q', 'B', 'F', 'M', 'X']).chars().take_while(|c| c.is_ascii_digit()).collect();
+    match (q, digits.as_str()) {
+        (_, "") => q.to_string(),
+        (_, d) => format!("{d}-bit"),
+    }
+}
+
 fn short_num(n: u64) -> String {
     if n >= 1_000_000 {
         format!("{:.1}M", n as f64 / 1e6)
@@ -1262,7 +1268,7 @@ fn draw_library(f: &mut Frame, app: &App, area: Rect) {
         ))],
     };
     f.render_widget(
-        Paragraph::new(now_lines).block(block_hot("LOADED NOW", green())),
+        Paragraph::new(now_lines).block(block_hot("LOADED NOW", ice())),
         now,
     );
 
@@ -1282,11 +1288,11 @@ fn draw_library(f: &mut Frame, app: &App, area: Rect) {
             Line::raw(""),
             Line::from(Span::styled(" no models downloaded yet.", bold(text()))),
             Line::from(Span::styled(
-                " launching one from Models (2) or Discover (3) downloads it; it shows up here.",
+                " launching one from Models (2) or Search (3) downloads it; it shows up here.",
                 s(dim()),
             )),
             Line::from(Span::styled(
-                " tokenpati also finds ollama's models and LM Studio's GGUFs.",
+                " tokenpati also finds ollama's models and LM Studio's models.",
                 s(dim()),
             )),
         ];
@@ -1372,7 +1378,7 @@ fn draw_run(f: &mut Frame, app: &App, area: Rect) {
             Line::from(Span::styled("nothing launched yet", bold(text()))),
             Line::raw(""),
             Line::from(Span::styled(
-                "pick a model on Models (2), Discover (3) or Library (4) and press enter.",
+                "pick a model on Models (2), Search (3) or Library (4) and press enter.",
                 s(dim()),
             )),
             Line::from(Span::styled(
@@ -1388,7 +1394,7 @@ fn draw_run(f: &mut Frame, app: &App, area: Rect) {
         f.render_widget(
             Paragraph::new(lines)
                 .alignment(Alignment::Center)
-                .block(block("RUN")),
+                .block(block("LAUNCH")),
             area,
         );
         return;
@@ -1582,7 +1588,7 @@ fn draw_step(f: &mut Frame, app: &App, i: usize, step: &StepState, area: Rect) {
             };
             f.render_widget(
                 Gauge::default()
-                    .gauge_style(Style::default().fg(accent()).bg(faint()))
+                    .gauge_style(Style::default().fg(prussian()).bg(faint()))
                     .ratio(ratio)
                     .label(Span::styled(
                         format!(
@@ -1963,7 +1969,7 @@ fn draw_engines(f: &mut Frame, app: &App, area: Rect) {
                 format!(" {} detecting engines…", spinner(app)),
                 s(dim()),
             ))
-            .block(block("ENGINES")),
+            .block(block("SETUP")),
             cards,
         );
         return;
@@ -2060,7 +2066,7 @@ fn draw_engines(f: &mut Frame, app: &App, area: Rect) {
             Line::raw(""),
             Line::from(Span::styled(" want control: llama.cpp", bold(text()))),
             Line::from(Span::styled(
-                "  any GGUF on Hugging Face, exact quant, choose",
+                "  any model on Hugging Face, exact quant, choose",
                 s(dim()),
             )),
             Line::from(Span::styled(
@@ -2150,9 +2156,9 @@ fn draw_plan(f: &mut Frame, app: &App, p: &PlanModal, area: Rect) {
                         app.variant.name()
                     ),
                     Some(_) if engine == EngineKind::Ollama => {
-                        "not installed: install it from Engines (7) first".into()
+                        "not installed: install it from Setup (7) first".into()
                     }
-                    Some(_) => "not installed: see Engines (7)".into(),
+                    Some(_) => "not installed: see Setup (7)".into(),
                     None => "checking…".into(),
                 };
                 ("engine", engine.name().to_string(), note)
@@ -2343,7 +2349,7 @@ impl LaunchPreview<'_> {
         match self.engine {
             EngineKind::Ollama => format!("ollama serve  +  num_ctx {}", self.p.context),
             EngineKind::LlamaCpp => format!(
-                "llama-server -m <gguf> -c {}{} --port {}",
+                "llama-server -m <model file> -c {}{} --port {}",
                 self.p.context,
                 self.gpu_layers
                     .map(|n| format!(" -ngl {n}"))
@@ -2473,7 +2479,7 @@ fn draw_help(f: &mut Frame, area: Rect) {
             s(dim()),
         )),
         Line::from(Span::styled(
-            "  Run shows each step as it happens → Chat talks to it. Everything also serves an",
+            "  Launch shows each step as it happens → Chat talks to it. Everything also serves an",
             s(dim()),
         )),
         Line::from(Span::styled(
